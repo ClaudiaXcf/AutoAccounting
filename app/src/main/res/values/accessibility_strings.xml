@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_description">自动记账服务用于读取微信、支付宝和银行App的交易信息。</string>
+</resources>
