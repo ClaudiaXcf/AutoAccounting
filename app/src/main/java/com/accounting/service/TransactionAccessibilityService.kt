@@ -92,10 +92,10 @@ class TransactionAccessibilityService : AccessibilityService() {
         val desc = node.contentDescription?.toString() ?: ""
         val combinedText = text + " " + desc
 
-        // Look for ¥ amounts
+        // 更严格的金额匹配模式，避免误匹配
         val amountPatterns = listOf(
-            """[¥￥]\s*([\d,]+\.?\d*)""".toRegex(),
-            """([\d,]+\.\d{2})\s*元""".toRegex()
+            """¥\s*(\d{1,6}(?:\.\d{1,2})?)""".toRegex(),
+            """(\d{1,6}(?:\.\d{1,2})?)\s*元""".toRegex()
         )
 
         for (pattern in amountPatterns) {
@@ -155,12 +155,16 @@ class TransactionAccessibilityService : AccessibilityService() {
     }
 
     private fun applyDirection(amount: Double, text: String, source: TransactionSource): Double {
+        val lowerText = text.lowercase()
+        
+        // 收入相关关键词
         val incomeKeywords = listOf("收入", "收款", "收到", "入账", "转入", "退款", "退回", "红包收入")
+        // 支出相关关键词
         val expenseKeywords = listOf("支出", "支付", "付款", "扣款", "消费", "转出", "已付款", "确认支付", "立即支付")
 
         return when {
-            expenseKeywords.any { text.contains(it, ignoreCase = true) } -> -kotlin.math.abs(amount)
-            incomeKeywords.any { text.contains(it, ignoreCase = true) } -> kotlin.math.abs(amount)
+            expenseKeywords.any { lowerText.contains(it) } -> -kotlin.math.abs(amount)
+            incomeKeywords.any { lowerText.contains(it) } -> kotlin.math.abs(amount)
             source in setOf(
                 TransactionSource.JD,
                 TransactionSource.TAOBAO,

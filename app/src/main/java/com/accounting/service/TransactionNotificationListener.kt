@@ -99,47 +99,94 @@ class TransactionNotificationListener : NotificationListenerService() {
     }
 
     private fun extractAmount(text: String): Double? {
-        // Match patterns like ¥128.00, ¥1,234.56, 128.00元, etc.
+        // 更严格的金额匹配模式，避免误匹配
         val patterns = listOf(
-            """¥\s*([\d,]+\.?\d*)""".toRegex(),
-            """([\d,]+\.?\d*)\s*元""".toRegex(),
-            """\$\s*([\d,]+\.?\d*)""".toRegex()
+            // ¥123.45 或 ¥ 123.45（人民币符号开头）
+            """¥\s*(\d{1,6}(?:\.\d{1,2})?)""".toRegex(),
+            // 123.45元 或 123.45 元（元结尾）
+            """(\d{1,6}(?:\.\d{1,2})?)\s*元""".toRegex(),
+            // $123.45（美元符号开头，需要区分处理）
+            """\$\s*(\d{1,6}(?:\.\d{1,2})?)""".toRegex()
         )
+
+        var bestAmount: Double? = null
+        var maxAmount = 0.0
 
         for (pattern in patterns) {
             val match = pattern.find(text)
             if (match != null) {
                 val amountStr = match.groupValues[1].replace(",", "")
-                return amountStr.toDoubleOrNull()
+                val amount = amountStr.toDoubleOrNull()
+                if (amount != null && amount > 0 && amount <= 999999.99) {
+                    // 优先选择较大的金额（更可能是实际交易金额）
+                    if (amount > maxAmount) {
+                        maxAmount = amount
+                        bestAmount = amount
+                    }
+                }
             }
         }
-        return null
+        return bestAmount
     }
 
     private fun applyDirection(amount: Double, text: String, source: TransactionSource): Double {
-        val incomeKeywords = listOf("收入", "收款", "收到", "入账", "转入", "退款", "退回", "红包收入")
-        val expenseKeywords = listOf("支出", "支付", "付款", "扣款", "消费", "转出", "已付款", "订单支付", "交易成功")
-
-        return when {
-            expenseKeywords.any { text.contains(it, ignoreCase = true) } -> -kotlin.math.abs(amount)
-            incomeKeywords.any { text.contains(it, ignoreCase = true) } -> kotlin.math.abs(amount)
-            source in setOf(
-                TransactionSource.JD,
-                TransactionSource.TAOBAO,
-                TransactionSource.PINDUODUO,
-                TransactionSource.MEITUAN,
-                TransactionSource.ELE,
-                TransactionSource.METRO
-            ) -> -kotlin.math.abs(amount)
+        val lowerText = text.lowercase()
+        
+        // 收入相关关键词（正数）
+        val incomeKeywords = listOf(
+            "收入", "收款", "收到", "入账", "转入", "退款", "退回", "红包收入",
+            "转账收入", "收到转账", "对方转账", "确认收款"
+        )
+        
+        // 支出相关关键词（负数）
+        val expenseKeywords = listOf(
+            "支出", "支付", "付款", "扣款", "消费", "转出", "已付款", "订单支付",
+            "交易成功", "已支付", "支付成功", "扫码支付", "转账支出", "付给"
+        )
+        
+        // 先检查关键词
+        when {
+            incomeKeywords.any { lowerText.contains(it) } -> return kotlin.math.abs(amount)
+            expenseKeywords.any { lowerText.contains(it) } -> return -kotlin.math.abs(amount)
+        }
+        
+        // 基于来源判断（电商/外卖平台默认为支出）
+        return when (source) {
+            TransactionSource.JD, TransactionSource.TAOBAO, TransactionSource.PINDUODUO,
+            TransactionSource.MEITUAN, TransactionSource.ELE, TransactionSource.METRO -> -kotlin.math.abs(amount)
+            // 微信和支付宝需要更多上下文判断
+            TransactionSource.WECHAT, TransactionSource.ALIPAY -> {
+                // 检查是否包含二维码等支付相关词汇
+                if (lowerText.contains("二维码") || lowerText.contains("扫码")) {
+                    -kotlin.math.abs(amount)
+                } else {
+                    // 微信/支付宝默认视为支出（更常见）
+                    -kotlin.math.abs(amount)
+                }
+            }
             else -> amount
         }
     }
 
     private fun sanitizeRawText(text: String): String {
+        // 脱敏所有敏感信息
         return text
+            // 银行卡号 (16-19位)
+            .replace(Regex("""\b\d{16,19}\b"""), "****")
+            // 信用卡安全码 (3-4位)
+            .replace(Regex("""[cvv]\s*[:：]?\s*\d{3,4}""", RegexOption.IGNORE_CASE), "***")
+            // 手机号
+            .replace(Regex("""\b1[3-9]\d{9}\b"""), "***")
+            // 身份证号
+            .replace(Regex("""\b\d{15}|\d{17}[\dXx]\b"""), "***")
+            // 账号中的数字序列 (连续12位以上)
             .replace(Regex("""\d{12,}"""), "***")
-            .replace(Regex("""\b\d{4}(?:\s?\d{4}){2,}\b"""), "***")
-            .take(300)
+            // 分隔的银行卡号 (如 1234 5678 9012 3456)
+            .replace(Regex("""\b\d{4}(\s?\d{4}){2,}\b"""), "****")
+            // 交易流水号/订单号
+            .replace(Regex("""[A-Z]{0,3}\d{8,}[A-Z]{0,3}"""), "***")
+            // 限制长度
+            .take(200)
     }
 
     private fun extractCounterparty(text: String, source: TransactionSource): String? {
