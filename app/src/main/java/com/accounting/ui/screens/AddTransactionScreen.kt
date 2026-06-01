@@ -27,6 +27,7 @@ import com.accounting.ui.theme.WeChatGreen
 import java.text.SimpleDateFormat
 import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTransactionScreen(
     onNavigateBack: () -> Unit,
