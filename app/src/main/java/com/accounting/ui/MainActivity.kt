@@ -71,7 +71,9 @@ class MainActivity : ComponentActivity() {
                     ) {
                         composable(Screen.Main.route) {
                             MainScreen(
-                                transactions = uiState.transactions,
+                                transactions = uiState.filteredTransactions,
+                                timeFilter = uiState.timeFilter,
+                                onTimeFilterChange = { viewModel.setTimeFilter(it) },
                                 onNavigateToStatistics = {
                                     navController.navigate(Screen.Statistics.route)
                                 },

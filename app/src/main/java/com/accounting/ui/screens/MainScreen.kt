@@ -1,174 +1,437 @@
 package com.accounting.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.accounting.domain.Transaction
 import com.accounting.domain.TransactionSource
+import com.accounting.ui.theme.AlipayBlue
+import com.accounting.ui.theme.BankOrange
+import com.accounting.ui.theme.ExpenseRed
+import com.accounting.ui.theme.IncomeGreen
+import com.accounting.ui.theme.QQBlue
+import com.accounting.ui.theme.WeChatGreen
+import com.accounting.ui.viewmodel.TimeFilter
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+data class TransactionGroup(
+    val date: String,
+    val transactions: List<Transaction>
+)
+
 @Composable
 fun MainScreen(
     transactions: List<Transaction>,
+    timeFilter: TimeFilter,
+    onTimeFilterChange: (TimeFilter) -> Unit,
     onNavigateToStatistics: () -> Unit,
     onNavigateToSettings: () -> Unit
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("自动记账") },
-                actions = {
-                    IconButton(onClick = onNavigateToStatistics) {
-                        Icon(Icons.Default.BarChart, contentDescription = "统计")
-                    }
-                    IconButton(onClick = onNavigateToSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = "设置")
-                    }
-                }
+    val backgroundColor = Color(0xFFF2F2F7)
+    val surfaceColor = Color.White
+
+    // Group transactions by date
+    val groupedTransactions = remember(transactions) {
+        val dateFormat = SimpleDateFormat("MM月dd日 EEEE", Locale.CHINA)
+        transactions.groupBy { dateFormat.format(Date(it.timestamp)) }
+            .map { (date, txns) -> TransactionGroup(date, txns) }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(backgroundColor)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // 顶部状态栏预留
+            Spacer(modifier = Modifier.height(50.dp))
+
+            // 大标题
+            Text(
+                text = "本月账单",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontSize = 34.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.5).sp
+                ),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
             )
-        }
-    ) { padding ->
-        if (transactions.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.AccountBalance,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "暂无交易记录",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "请开启通知访问和无障碍服务",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                    )
+
+            // 概览卡片 - 白色圆角卡片
+            OverviewCard(
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 时间筛选器 - iOS 风格标签
+            TimeFilterChips(
+                selectedFilter = timeFilter,
+                onFilterChange = onTimeFilterChange,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 交易列表
+            if (groupedTransactions.isEmpty()) {
+                EmptyState()
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
+                ) {
+                    groupedTransactions.forEach { group ->
+                        item {
+                            Text(
+                                text = group.date,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF8E8E93)
+                                ),
+                                modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)
+                            )
+                        }
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = surfaceColor)
+                            ) {
+                                Column {
+                                    group.transactions.forEachIndexed { index, transaction ->
+                                        TransactionRow(transaction)
+                                        if (index < group.transactions.size - 1) {
+                                            Divider(
+                                                modifier = Modifier.padding(start = 66.dp),
+                                                color = Color(0xFFE5E5EA),
+                                                thickness = 0.5.dp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        item { Spacer(modifier = Modifier.height(16.dp)) }
+                    }
                 }
             }
-        } else {
-            LazyColumn(
+
+            // 底部导航栏高度
+            Spacer(modifier = Modifier.height(83.dp))
+        }
+
+        // 底部毛玻璃导航栏
+        FrostedTabBar(
+            onStatisticsClick = onNavigateToStatistics,
+            onSettingsClick = onNavigateToSettings,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+}
+
+@Composable
+private fun OverviewCard(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            OverviewItem(
+                title = "本月支出",
+                amount = "4,520.00",
+                isExpense = true
+            )
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .width(0.5.dp)
+                    .height(40.dp)
+                    .background(Color(0xFFE5E5EA))
+            )
+            OverviewItem(
+                title = "本月收入",
+                amount = "9,800.00",
+                isExpense = false
+            )
+        }
+    }
+}
+
+@Composable
+private fun OverviewItem(
+    title: String,
+    amount: String,
+    isExpense: Boolean
+) {
+    Column {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontSize = 13.sp,
+                color = Color(0xFF8E8E93)
+            )
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "¥ $amount",
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            color = if (isExpense) ExpenseRed else IncomeGreen
+        )
+    }
+}
+
+@Composable
+private fun TimeFilterChips(
+    selectedFilter: TimeFilter,
+    onFilterChange: (TimeFilter) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val filters = listOf(
+        TimeFilter.ALL to "全部",
+        TimeFilter.TODAY to "今天",
+        TimeFilter.WEEK to "本周",
+        TimeFilter.MONTH to "本月"
+    )
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        filters.forEach { (filter, label) ->
+            val isSelected = selectedFilter == filter
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(
+                        if (isSelected) Color(0xFF007AFF) else Color.White
+                    )
+                    .clickable { onFilterChange(filter) }
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                items(transactions) { transaction ->
-                    TransactionItem(transaction)
-                }
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontSize = 14.sp,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                    ),
+                    color = if (isSelected) Color.White else Color(0xFF8E8E93)
+                )
             }
         }
     }
 }
 
 @Composable
-fun TransactionItem(transaction: Transaction) {
-    val dateFormat = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
-    val formattedTime = dateFormat.format(Date(transaction.timestamp))
-
-    val sourceIcon = when (transaction.source) {
-        TransactionSource.WECHAT.name -> Icons.Default.Chat
-        TransactionSource.QQ.name -> Icons.Default.Chat
-        TransactionSource.ALIPAY.name -> Icons.Default.Payment
-        TransactionSource.BANK.name -> Icons.Default.AccountBalance
-        else -> Icons.Default.Payment
-    }
+private fun TransactionRow(transaction: Transaction) {
+    val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val formattedTime = timeFormat.format(Date(transaction.timestamp))
 
     val sourceColor = when (transaction.source) {
-        TransactionSource.WECHAT.name -> MaterialTheme.colorScheme.primary
-        TransactionSource.QQ.name -> MaterialTheme.colorScheme.primary
-        TransactionSource.ALIPAY.name -> MaterialTheme.colorScheme.secondary
-        TransactionSource.BANK.name -> MaterialTheme.colorScheme.tertiary
-        else -> MaterialTheme.colorScheme.primary
+        TransactionSource.WECHAT.name -> WeChatGreen
+        TransactionSource.QQ.name -> QQBlue
+        TransactionSource.ALIPAY.name -> AlipayBlue
+        TransactionSource.BANK.name -> BankOrange
+        else -> Color(0xFF007AFF)
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { }
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 图标容器 - 12%不透明度色彩晕染
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(50))
+                .background(sourceColor.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = when (transaction.source) {
+                    TransactionSource.WECHAT.name -> Icons.Default.Chat
+                    TransactionSource.QQ.name -> Icons.Default.Chat
+                    TransactionSource.ALIPAY.name -> Icons.Default.Payment
+                    TransactionSource.BANK.name -> Icons.Default.AccountBalance
+                    else -> Icons.Default.Payment
+                },
+                contentDescription = null,
+                tint = sourceColor,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(14.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = transaction.counterparty ?: "未知",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "$formattedTime · ${TransactionSource.fromName(transaction.source)?.displayName ?: transaction.source}",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontSize = 13.sp,
+                    color = Color(0xFF8E8E93)
+                )
+            )
+        }
+
+        Text(
+            text = "${if (transaction.amount >= 0) "+" else "-"}¥ ${String.format("%.2f", kotlin.math.abs(transaction.amount))}",
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold
+            ),
+            color = if (transaction.amount >= 0) IncomeGreen else ExpenseRed
+        )
+    }
+}
+
+@Composable
+private fun EmptyState() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = 83.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "暂无交易记录",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color(0xFF8E8E93)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "请开启通知访问和无障碍服务",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFF8E8E93).copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun FrostedTabBar(
+    onStatisticsClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(83.dp)
+            .background(Color.White.copy(alpha = 0.8f))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 40.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
         ) {
-            Icon(
-                imageVector = sourceIcon,
-                contentDescription = null,
-                tint = sourceColor,
-                modifier = Modifier.size(40.dp)
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = transaction.counterparty ?: "未知",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
+            // 账单 tab
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    Icons.Default.Description,
+                    contentDescription = "账单",
+                    tint = Color(0xFF007AFF),
+                    modifier = Modifier.size(26.dp)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = TransactionSource.fromName(transaction.source)?.displayName
-                            ?: transaction.source,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                    Text(
-                        text = " • ",
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                    )
-                    Text(
-                        text = formattedTime,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
-                transaction.description?.let {
-                    if (it.isNotEmpty() && it != transaction.counterparty) {
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                            maxLines = 1
-                        )
-                    }
-                }
+                Text(
+                    text = "账单",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = Color(0xFF007AFF)
+                )
             }
 
-            Column(horizontalAlignment = Alignment.End) {
-                val amountPrefix = if (transaction.amount >= 0) "+" else ""
+            // 记账 tab (核心大按钮)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    Icons.Default.AddCircle,
+                    contentDescription = "记账",
+                    tint = Color(0xFF007AFF),
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "$amountPrefix¥${String.format("%.2f", kotlin.math.abs(transaction.amount))}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (transaction.amount >= 0)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.error
+                    text = "记账",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = Color(0xFF007AFF)
+                )
+            }
+
+            // 统计 tab
+            Column(
+                modifier = Modifier.clickable { onStatisticsClick() },
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    Icons.Default.BarChart,
+                    contentDescription = "统计",
+                    tint = Color(0xFF8E8E93),
+                    modifier = Modifier.size(26.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "统计",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = Color(0xFF8E8E93)
                 )
             }
         }

@@ -11,11 +11,17 @@ import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
 
+enum class TimeFilter {
+    ALL, TODAY, WEEK, MONTH
+}
+
 data class MainUiState(
     val transactions: List<Transaction> = emptyList(),
+    val filteredTransactions: List<Transaction> = emptyList(),
     val monthlyExpense: Double = 0.0,
     val monthlyIncome: Double = 0.0,
-    val categoryTotals: List<CategoryTotal> = emptyList()
+    val categoryTotals: List<CategoryTotal> = emptyList(),
+    val timeFilter: TimeFilter = TimeFilter.ALL
 )
 
 @HiltViewModel
@@ -33,8 +39,57 @@ class MainViewModel @Inject constructor(
     private fun loadTransactions() {
         viewModelScope.launch {
             repository.getAllTransactions().collect { transactions ->
-                _uiState.update { it.copy(transactions = transactions) }
+                _uiState.update { state ->
+                    state.copy(
+                        transactions = transactions,
+                        filteredTransactions = filterTransactions(transactions, state.timeFilter)
+                    )
+                }
                 calculateStatistics(transactions)
+            }
+        }
+    }
+
+    fun setTimeFilter(filter: TimeFilter) {
+        _uiState.update { state ->
+            state.copy(
+                timeFilter = filter,
+                filteredTransactions = filterTransactions(state.transactions, filter)
+            )
+        }
+    }
+
+    private fun filterTransactions(transactions: List<Transaction>, filter: TimeFilter): List<Transaction> {
+        val calendar = Calendar.getInstance()
+        val now = System.currentTimeMillis()
+
+        return when (filter) {
+            TimeFilter.ALL -> transactions
+            TimeFilter.TODAY -> {
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                val startOfDay = calendar.timeInMillis
+                transactions.filter { it.timestamp >= startOfDay }
+            }
+            TimeFilter.WEEK -> {
+                calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                val startOfWeek = calendar.timeInMillis
+                transactions.filter { it.timestamp >= startOfWeek }
+            }
+            TimeFilter.MONTH -> {
+                calendar.set(Calendar.DAY_OF_MONTH, 1)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                val startOfMonth = calendar.timeInMillis
+                transactions.filter { it.timestamp >= startOfMonth }
             }
         }
     }
