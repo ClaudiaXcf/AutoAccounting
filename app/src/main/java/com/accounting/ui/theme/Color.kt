@@ -23,12 +23,3 @@ val WeChatGreen = Color(0xFF07C160)
 val QQBlue = Color(0xFF12B7F5)
 val AlipayBlue = Color(0xFF1677FF)
 val BankOrange = Color(0xFFFF9500)
-
-// 渐变色
-val GradientStart = Color(0xFF667EEA)
-val GradientEnd = Color(0xFF764BA2)
-
-// 毛玻璃
-val FrostedGlass = Color(0xFFF2F2F7).copy(alpha = 0.8f)
-val CardBackground = Color(0xFFFFFFFF)
-val CardBackgroundDark = Color(0xFF1C1C1E)

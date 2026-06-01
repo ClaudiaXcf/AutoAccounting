@@ -13,26 +13,32 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.accounting.data.db.CategoryTotal
+import com.accounting.domain.Transaction
+import com.accounting.domain.TransactionSource
+import com.accounting.ui.theme.AlipayBlue
+import com.accounting.ui.theme.BankOrange
 import com.accounting.ui.theme.ExpenseRed
+import com.accounting.ui.theme.IncomeGreen
+import com.accounting.ui.theme.QQBlue
+import com.accounting.ui.theme.WeChatGreen
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun StatisticsScreen(
-    monthlyExpense: Double,
-    monthlyIncome: Double,
-    categoryTotals: List<CategoryTotal>,
+fun TrashScreen(
+    deletedTransactions: List<Transaction>,
+    onRestore: (Long) -> Unit,
+    onHardDelete: (Long) -> Unit,
     onNavigateBack: () -> Unit
 ) {
     val backgroundColor = MaterialTheme.colorScheme.background
     val surfaceColor = MaterialTheme.colorScheme.surface
-    val dateFormat = SimpleDateFormat("yyyy年MM月", Locale.getDefault())
-    val currentMonth = dateFormat.format(Date())
+    val dateFormat = SimpleDateFormat("yyyy年MM月dd日 HH:mm", Locale.getDefault())
 
     Box(
         modifier = Modifier
@@ -69,7 +75,7 @@ fun StatisticsScreen(
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
-                    text = "统计报表",
+                    text = "垃圾箱",
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontSize = 34.sp,
                         fontWeight = FontWeight.Bold
@@ -78,114 +84,46 @@ fun StatisticsScreen(
                 )
             }
 
-            // 概览卡片
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = surfaceColor)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            androidx.compose.ui.graphics.Brush.horizontalGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.06f),
-                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.06f)
-                                )
-                            )
-                        )
-                        .padding(20.dp)
-                ) {
-                    Text(
-                        text = currentMonth,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = 13.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text(
-                                text = "支出",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "¥ ${String.format("%,.2f", kotlin.math.abs(monthlyExpense))}",
-                                style = MaterialTheme.typography.headlineMedium.copy(
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = ExpenseRed
-                            )
-                        }
-                        Column(
-                            horizontalAlignment = Alignment.End
-                        ) {
-                            Text(
-                                text = "收入",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "¥ ${String.format("%,.2f", monthlyIncome)}",
-                                style = MaterialTheme.typography.headlineMedium.copy(
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = com.accounting.ui.theme.IncomeGreen
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 支出分类标题
+            // 说明
             Text(
-                text = "支出分类",
-                style = MaterialTheme.typography.bodyMedium.copy(
+                text = "回收站中的数据将在30天后自动删除",
+                style = MaterialTheme.typography.bodySmall.copy(
                     fontSize = 13.sp
                 ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
             )
 
-            // 分类列表
-            if (categoryTotals.isEmpty()) {
-                Card(
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (deletedTransactions.isEmpty()) {
+                // 空状态
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = surfaceColor)
+                        .fillMaxSize()
+                        .padding(bottom = 100.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(40.dp),
-                        contentAlignment = Alignment.Center
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Icon(
+                            Icons.Default.DeleteOutline,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "暂无分类数据",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyLarge
+                            text = "垃圾箱是空的",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
                 ) {
                     item {
@@ -195,12 +133,14 @@ fun StatisticsScreen(
                             colors = CardDefaults.cardColors(containerColor = surfaceColor)
                         ) {
                             Column {
-                                categoryTotals.forEachIndexed { index, categoryTotal ->
-                                    CategoryRow(
-                                        categoryTotal = categoryTotal,
-                                        totalExpense = kotlin.math.abs(monthlyExpense)
+                                deletedTransactions.forEachIndexed { index, transaction ->
+                                    TrashItem(
+                                        transaction = transaction,
+                                        dateFormat = dateFormat,
+                                        onRestore = { onRestore(transaction.id) },
+                                        onDelete = { onHardDelete(transaction.id) }
                                     )
-                                    if (index < categoryTotals.size - 1) {
+                                    if (index < deletedTransactions.size - 1) {
                                         Divider(
                                             modifier = Modifier.padding(start = 66.dp),
                                             color = MaterialTheme.colorScheme.outlineVariant,
@@ -217,7 +157,7 @@ fun StatisticsScreen(
         }
 
         // 底部毛玻璃导航栏
-        FrostedTabBarStatistics(
+        FrostedTabBarTrash(
             onBackClick = onNavigateBack,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
@@ -225,77 +165,116 @@ fun StatisticsScreen(
 }
 
 @Composable
-private fun CategoryRow(
-    categoryTotal: CategoryTotal,
-    totalExpense: Double
+private fun TrashItem(
+    transaction: Transaction,
+    dateFormat: SimpleDateFormat,
+    onRestore: () -> Unit,
+    onDelete: () -> Unit
 ) {
-    val percentage = if (totalExpense > 0) (categoryTotal.total / totalExpense * 100) else 0.0
-    val categoryName = categoryTotal.category ?: "未分类"
+    val sourceColor = when (transaction.source) {
+        TransactionSource.WECHAT.name -> WeChatGreen
+        TransactionSource.QQ.name -> QQBlue
+        TransactionSource.ALIPAY.name -> AlipayBlue
+        TransactionSource.BANK.name -> BankOrange
+        else -> MaterialTheme.colorScheme.primary
+    }
 
-    Column(
+    var showDialog by remember { mutableStateOf(false) }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("确认永久删除？") },
+            text = { Text("删除后无法恢复") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDelete()
+                    showDialog = false
+                }) {
+                    Text("删除", color = ExpenseRed)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(14.dp)
+            .clickable { onRestore() }
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        // 图标容器
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(50))
+                .background(sourceColor.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
         ) {
+            Icon(
+                imageVector = when (transaction.source) {
+                    TransactionSource.WECHAT.name -> Icons.Default.Chat
+                    TransactionSource.QQ.name -> Icons.Default.Chat
+                    TransactionSource.ALIPAY.name -> Icons.Default.Payment
+                    TransactionSource.BANK.name -> Icons.Default.AccountBalance
+                    else -> Icons.Default.Payment
+                },
+                contentDescription = null,
+                tint = sourceColor,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(14.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = categoryName,
+                text = transaction.counterparty ?: "未知",
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 ),
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "¥ ${String.format("%.2f", categoryTotal.total)}",
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
+                text = dateFormat.format(Date(transaction.deletedAt ?: transaction.timestamp)),
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontSize = 13.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Spacer(modifier = Modifier.height(10.dp))
-        // 进度条
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(percentage.toFloat().coerceIn(0f, 1f))
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(
-                        androidx.compose.ui.graphics.Brush.horizontalGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.tertiary
-                            )
-                        )
-                    )
+
+        // 恢复按钮
+        IconButton(onClick = onRestore) {
+            Icon(
+                Icons.Default.Restore,
+                contentDescription = "恢复",
+                tint = IncomeGreen
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "${String.format("%.1f", percentage)}%",
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontSize = 13.sp
-            ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+
+        // 永久删除按钮
+        IconButton(onClick = { showDialog = true }) {
+            Icon(
+                Icons.Default.DeleteForever,
+                contentDescription = "永久删除",
+                tint = ExpenseRed
+            )
+        }
     }
 }
 
 @Composable
-private fun FrostedTabBarStatistics(
+private fun FrostedTabBarTrash(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -357,19 +336,19 @@ private fun FrostedTabBarStatistics(
                 )
             }
 
-            // 统计 tab
+            // 垃圾箱 tab
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Icon(
-                    Icons.Default.BarChart,
-                    contentDescription = "统计",
+                    Icons.Default.Delete,
+                    contentDescription = "垃圾箱",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(26.dp)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "统计",
+                    text = "垃圾箱",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium

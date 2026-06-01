@@ -12,6 +12,8 @@ data class Transaction(
     val counterparty: String?,   // 交易对方
     val category: String?,       // 自动分类
     val timestamp: Long,         // 交易时间
-    val description: String?,   // 交易描述
-    val rawNotification: String? // 原始通知内容
+    val description: String?,    // 交易描述
+    val rawNotification: String?, // 原始通知内容
+    val deleted: Boolean = false,      // 是否在回收站
+    val deletedAt: Long? = null        // 删除时间（用于30天过期）
 )

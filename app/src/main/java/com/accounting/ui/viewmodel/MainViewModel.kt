@@ -34,6 +34,7 @@ class MainViewModel @Inject constructor(
 
     init {
         loadTransactions()
+        cleanExpiredTrash()
     }
 
     private fun loadTransactions() {
@@ -59,9 +60,14 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    fun softDelete(id: Long) {
+        viewModelScope.launch {
+            repository.softDelete(id)
+        }
+    }
+
     private fun filterTransactions(transactions: List<Transaction>, filter: TimeFilter): List<Transaction> {
         val calendar = Calendar.getInstance()
-        val now = System.currentTimeMillis()
 
         return when (filter) {
             TimeFilter.ALL -> transactions
@@ -122,6 +128,12 @@ class MainViewModel @Inject constructor(
                     categoryTotals = categories
                 )
             }
+        }
+    }
+
+    private fun cleanExpiredTrash() {
+        viewModelScope.launch {
+            repository.deleteExpired()
         }
     }
 }

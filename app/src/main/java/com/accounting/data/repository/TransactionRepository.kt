@@ -12,6 +12,8 @@ class TransactionRepository @Inject constructor(
 ) {
     fun getAllTransactions(): Flow<List<Transaction>> = transactionDao.getAllTransactions()
 
+    fun getDeletedTransactions(): Flow<List<Transaction>> = transactionDao.getDeletedTransactions()
+
     fun getTransactionsByDateRange(startTime: Long, endTime: Long): Flow<List<Transaction>> =
         transactionDao.getTransactionsByDateRange(startTime, endTime)
 
@@ -32,7 +34,18 @@ class TransactionRepository @Inject constructor(
         return if (duplicateCount == 0) transactionDao.insert(transaction) else null
     }
 
-    suspend fun delete(id: Long) = transactionDao.delete(id)
+    suspend fun softDelete(id: Long) = transactionDao.softDelete(id)
+
+    suspend fun restore(id: Long) = transactionDao.restore(id)
+
+    suspend fun hardDelete(id: Long) = transactionDao.hardDelete(id)
+
+    suspend fun deleteExpired() {
+        val expiredTime = System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000L
+        transactionDao.deleteExpired(expiredTime)
+    }
+
+    suspend fun deleteAllDeleted() = transactionDao.deleteAllDeleted()
 
     suspend fun getTotalExpense(startTime: Long, endTime: Long): Double =
         transactionDao.getTotalExpense(startTime, endTime) ?: 0.0

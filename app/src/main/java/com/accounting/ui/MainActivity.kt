@@ -22,8 +22,10 @@ import com.accounting.ui.navigation.Screen
 import com.accounting.ui.screens.MainScreen
 import com.accounting.ui.screens.SettingsScreen
 import com.accounting.ui.screens.StatisticsScreen
+import com.accounting.ui.screens.TrashScreen
 import com.accounting.ui.theme.AutoAccountingTheme
 import com.accounting.ui.viewmodel.MainViewModel
+import com.accounting.ui.viewmodel.TrashViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -40,8 +42,10 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val navController = rememberNavController()
                     val viewModel: MainViewModel = viewModel()
+                    val trashViewModel: TrashViewModel = viewModel()
 
                     val uiState by viewModel.uiState.collectAsState()
+                    val trashUiState by trashViewModel.uiState.collectAsState()
 
                     var notificationEnabled by remember { mutableStateOf(false) }
                     var accessibilityEnabled by remember { mutableStateOf(false) }
@@ -79,6 +83,12 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onNavigateToSettings = {
                                     navController.navigate(Screen.Settings.route)
+                                },
+                                onNavigateToTrash = {
+                                    navController.navigate(Screen.Trash.route)
+                                },
+                                onDelete = { id ->
+                                    viewModel.softDelete(id)
                                 }
                             )
                         }
@@ -96,6 +106,20 @@ class MainActivity : ComponentActivity() {
                             SettingsScreen(
                                 notificationEnabled = notificationEnabled,
                                 accessibilityEnabled = accessibilityEnabled,
+                                onNavigateBack = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+                        composable(Screen.Trash.route) {
+                            TrashScreen(
+                                deletedTransactions = trashUiState.deletedTransactions,
+                                onRestore = { id ->
+                                    trashViewModel.restore(id)
+                                },
+                                onHardDelete = { id ->
+                                    trashViewModel.hardDelete(id)
+                                },
                                 onNavigateBack = {
                                     navController.popBackStack()
                                 }

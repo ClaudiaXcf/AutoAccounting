@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -21,7 +20,6 @@ import androidx.compose.ui.unit.sp
 import com.accounting.ui.theme.ExpenseRed
 import com.accounting.ui.theme.IncomeGreen
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     notificationEnabled: Boolean,
@@ -29,8 +27,8 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val backgroundColor = Color(0xFFF2F2F7)
-    val surfaceColor = Color.White
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val surfaceColor = MaterialTheme.colorScheme.surface
 
     Box(
         modifier = Modifier
@@ -61,7 +59,7 @@ fun SettingsScreen(
                     Icon(
                         Icons.Default.ArrowBack,
                         contentDescription = "返回",
-                        tint = Color(0xFF007AFF),
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -71,7 +69,8 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontSize = 34.sp,
                         fontWeight = FontWeight.Bold
-                    )
+                    ),
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
 
@@ -81,9 +80,9 @@ fun SettingsScreen(
             Text(
                 text = "权限状态",
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 13.sp,
-                    color = Color(0xFF8E8E93)
+                    fontSize = 13.sp
                 ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
             )
 
@@ -98,8 +97,8 @@ fun SettingsScreen(
                 Column {
                     SettingsRow(
                         icon = Icons.Default.Notifications,
-                        iconBgColor = Color(0xFF007AFF).copy(alpha = 0.12f),
-                        iconColor = Color(0xFF007AFF),
+                        iconBgColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        iconColor = MaterialTheme.colorScheme.primary,
                         title = "通知访问权限",
                         description = "读取微信、支付宝、银行的交易通知",
                         isEnabled = notificationEnabled,
@@ -110,13 +109,13 @@ fun SettingsScreen(
                     )
                     Divider(
                         modifier = Modifier.padding(start = 66.dp),
-                        color = Color(0xFFE5E5EA),
+                        color = MaterialTheme.colorScheme.outlineVariant,
                         thickness = 0.5.dp
                     )
                     SettingsRow(
                         icon = Icons.Default.Accessibility,
-                        iconBgColor = Color(0xFF5856D6).copy(alpha = 0.12f),
-                        iconColor = Color(0xFF5856D6),
+                        iconBgColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f),
+                        iconColor = MaterialTheme.colorScheme.tertiary,
                         title = "无障碍服务",
                         description = "读取App内的交易详情（金额、对方等）",
                         isEnabled = accessibilityEnabled,
@@ -134,9 +133,9 @@ fun SettingsScreen(
             Text(
                 text = "说明",
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 13.sp,
-                    color = Color(0xFF8E8E93)
+                    fontSize = 13.sp
                 ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
             )
 
@@ -166,7 +165,7 @@ fun SettingsScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF2F0))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f))
             ) {
                 Row(
                     modifier = Modifier
@@ -194,7 +193,7 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontSize = 14.sp
                         ),
-                        color = Color(0xFF1C1C1E)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -214,8 +213,8 @@ fun SettingsScreen(
 @Composable
 private fun SettingsRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    iconBgColor: Color,
-    iconColor: Color,
+    iconBgColor: androidx.compose.ui.graphics.Color,
+    iconColor: androidx.compose.ui.graphics.Color,
     title: String,
     description: String,
     isEnabled: Boolean,
@@ -249,14 +248,15 @@ private fun SettingsRow(
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
-                )
+                ),
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodySmall.copy(
-                    fontSize = 13.sp,
-                    color = Color(0xFF8E8E93)
-                )
+                    fontSize = 13.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Box(
@@ -291,14 +291,14 @@ private fun InfoRow(label: String, value: String) {
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium
             ),
-            color = Color(0xFF1C1C1E)
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium.copy(
-                fontSize = 14.sp,
-                color = Color(0xFF8E8E93)
-            )
+                fontSize = 14.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -308,11 +308,13 @@ private fun FrostedTabBarSettings(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val tabBarBackground = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(83.dp)
-            .background(Color.White.copy(alpha = 0.8f))
+            .background(tabBarBackground)
     ) {
         Row(
             modifier = Modifier
@@ -329,7 +331,7 @@ private fun FrostedTabBarSettings(
                 Icon(
                     Icons.Default.Description,
                     contentDescription = "账单",
-                    tint = Color(0xFF8E8E93),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(26.dp)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -339,18 +341,18 @@ private fun FrostedTabBarSettings(
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium
                     ),
-                    color = Color(0xFF8E8E93)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // 记账 tab (核心大按钮)
+            // 记账 tab
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Icon(
                     Icons.Default.AddCircle,
                     contentDescription = "记账",
-                    tint = Color(0xFF007AFF),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(32.dp)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -360,7 +362,7 @@ private fun FrostedTabBarSettings(
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium
                     ),
-                    color = Color(0xFF007AFF)
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -371,7 +373,7 @@ private fun FrostedTabBarSettings(
                 Icon(
                     Icons.Default.Settings,
                     contentDescription = "设置",
-                    tint = Color(0xFF007AFF),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(26.dp)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -381,7 +383,7 @@ private fun FrostedTabBarSettings(
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium
                     ),
-                    color = Color(0xFF007AFF)
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
