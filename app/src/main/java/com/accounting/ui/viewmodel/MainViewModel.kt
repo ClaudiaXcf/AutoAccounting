@@ -136,4 +136,19 @@ class MainViewModel @Inject constructor(
             repository.deleteExpired()
         }
     }
+
+    fun addTransaction(amount: Double, counterparty: String?, source: TransactionSource, description: String?) {
+        viewModelScope.launch {
+            val transaction = Transaction(
+                source = source.name,
+                amount = amount,
+                counterparty = counterparty,
+                category = null,
+                timestamp = System.currentTimeMillis(),
+                description = description,
+                rawNotification = null
+            )
+            repository.insert(transaction)
+        }
+    }
 }

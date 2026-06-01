@@ -42,6 +42,7 @@ fun MainScreen(
     onNavigateToStatistics: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToTrash: () -> Unit,
+    onNavigateToAddTransaction: () -> Unit,
     onDelete: (Long) -> Unit
 ) {
     val backgroundColor = MaterialTheme.colorScheme.background
@@ -148,6 +149,7 @@ fun MainScreen(
         FrostedTabBar(
             onStatisticsClick = onNavigateToStatistics,
             onTrashClick = onNavigateToTrash,
+            onAddClick = onNavigateToAddTransaction,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
@@ -402,6 +404,7 @@ private fun EmptyState() {
 private fun FrostedTabBar(
     onStatisticsClick: () -> Unit,
     onTrashClick: () -> Unit,
+    onAddClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val tabBarBackground = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
@@ -442,6 +445,7 @@ private fun FrostedTabBar(
 
             // 记账 tab
             Column(
+                modifier = Modifier.clickable { onAddClick() },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Icon(

@@ -19,6 +19,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.accounting.ui.navigation.Screen
+import com.accounting.ui.screens.AddTransactionScreen
 import com.accounting.ui.screens.MainScreen
 import com.accounting.ui.screens.SettingsScreen
 import com.accounting.ui.screens.StatisticsScreen
@@ -87,6 +88,9 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToTrash = {
                                     navController.navigate(Screen.Trash.route)
                                 },
+                                onNavigateToAddTransaction = {
+                                    navController.navigate(Screen.AddTransaction.route)
+                                },
                                 onDelete = { id ->
                                     viewModel.softDelete(id)
                                 }
@@ -121,6 +125,17 @@ class MainActivity : ComponentActivity() {
                                     trashViewModel.hardDelete(id)
                                 },
                                 onNavigateBack = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+                        composable(Screen.AddTransaction.route) {
+                            AddTransactionScreen(
+                                onNavigateBack = {
+                                    navController.popBackStack()
+                                },
+                                onSave = { amount, counterparty, source, description ->
+                                    viewModel.addTransaction(amount, counterparty, source, description)
                                     navController.popBackStack()
                                 }
                             )
